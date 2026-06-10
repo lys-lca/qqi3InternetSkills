@@ -11,5 +11,5 @@ To change the learning content:
 - data/scenario-data.js contains the Safe or Risky cards.
 
 The matching game automatically uses entries from glossary-data.js.
+The wordsearch also uses glossary-data.js and selects fresh terms for each game.
 Learner progress and theme choice are saved only in the current browser.
-

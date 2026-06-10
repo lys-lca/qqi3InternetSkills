@@ -1,7 +1,7 @@
 /**
  * glossary-data.js
  * ------------------------------------------------------------------
- * Shared learning data for the glossary and matching game.
+ * Shared learning data for the glossary, matching game and wordsearch.
  *
  * HOW TO EDIT
  * 1. Add or change a category in CATEGORIES.
@@ -441,4 +441,3 @@ const GLOSSARY = [
     tags: ["safety"]
   }
 ];
-

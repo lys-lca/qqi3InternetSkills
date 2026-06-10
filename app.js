@@ -7,6 +7,7 @@
  * - data/glossary-data.js
  * - data/quiz-data.js
  * - data/scenario-data.js
+ * - wordsearch-engine.js supplies puzzle generation helpers
  * ------------------------------------------------------------------
  */
 
@@ -24,6 +25,8 @@ const DEFAULT_PROGRESS = {
   quizAttempts: 0,
   matchBest: 0,
   matchAttempts: 0,
+  wordsearchBest: 0,
+  wordsearchAttempts: 0,
   sortBest: 0,
   sortAttempts: 0,
   lastRoute: "glossary"
@@ -37,6 +40,7 @@ const icons = {
   book: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22V5.5ZM20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22V5.5Z"></path></svg>',
   quiz: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h10M9 12h10M9 19h10M3 5l1 1 2-2M3 12l1 1 2-2M3 19l1 1 2-2"></path></svg>',
   match: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 3v3.5H5a3 3 0 1 0 0 6h3.5V16H12v3.5a3 3 0 1 0 6 0V16h3v-3.5h-3.5V9H14V6.5h-2A3.5 3.5 0 0 0 8.5 3Z"></path></svg>',
+  wordsearch: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M9 3v18M15 3v18M3 9h18M3 15h18M5.5 6h1M11.5 12h1M17.5 18h1"></path></svg>',
   sort: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M4 7h16M6 7l-3 6h6L6 7ZM18 7l-3 6h6l-3-6ZM7 21h10"></path></svg>',
   shield: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.8 2.8 8.3 7 10 4.2-1.7 7-5.2 7-10V6l-7-3Z"></path><path d="m9 12 2 2 4-5"></path></svg>',
   wifi: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.9 9.9a10 10 0 0 1 14.2 0M7.8 12.8a6 6 0 0 1 8.4 0M10.6 15.6a2 2 0 0 1 2.8 0"></path><circle cx="12" cy="19" r=".8" fill="currentColor" stroke="none"></circle></svg>',
@@ -89,6 +93,7 @@ function routeLabel(route) {
     glossary: "Glossary",
     quiz: "Quick Quiz",
     match: "Match the Terms",
+    wordsearch: "Wordsearch",
     sort: "Safe or Risky"
   }[route] || "Glossary";
 }
@@ -98,13 +103,14 @@ function routeIcon(route) {
     glossary: icons.book,
     quiz: icons.quiz,
     match: icons.match,
+    wordsearch: icons.wordsearch,
     sort: icons.sort
   }[route] || icons.book;
 }
 
 function getRoute() {
   const route = window.location.hash.replace("#", "").split("?")[0];
-  return ["home", "glossary", "quiz", "match", "sort"].includes(route) ? route : "home";
+  return ["home", "glossary", "quiz", "match", "wordsearch", "sort"].includes(route) ? route : "home";
 }
 
 function navigate(route) {
@@ -140,6 +146,7 @@ function render() {
   if (route === "glossary") renderGlossary();
   if (route === "quiz") renderQuizSetup();
   if (route === "match") renderMatchSetup();
+  if (route === "wordsearch") renderWordsearchSetup();
   if (route === "sort") renderSortSetup();
 
   document.title = `${route === "home" ? "Internet Skills Hub" : `${routeLabel(route)} | Internet Skills Hub`}`;
@@ -150,8 +157,9 @@ function calculateProgress() {
   const glossaryGoal = Math.min(progress.glossaryViewed.length, 12) / 12;
   const quizGoal = Math.min(progress.quizBest, 8) / 8;
   const matchGoal = Math.min(progress.matchBest, 8) / 8;
+  const wordsearchGoal = Math.min(progress.wordsearchBest, 8) / 8;
   const sortGoal = Math.min(progress.sortBest, 8) / 8;
-  return Math.round(((glossaryGoal + quizGoal + matchGoal + sortGoal) / 4) * 100);
+  return Math.round(((glossaryGoal + quizGoal + matchGoal + wordsearchGoal + sortGoal) / 5) * 100);
 }
 
 function renderHome() {
@@ -184,6 +192,15 @@ function renderHome() {
       accent: "var(--yellow)",
       soft: "var(--yellow-soft)",
       button: "Start matching"
+    },
+    {
+      route: "wordsearch",
+      title: "Wordsearch",
+      text: "Find up to ten changing glossary terms using three difficulty modes.",
+      icon: icons.wordsearch,
+      accent: "var(--purple)",
+      soft: "var(--purple-soft)",
+      button: "Create a puzzle"
     },
     {
       route: "sort",
@@ -239,6 +256,7 @@ function renderHome() {
         </div>
         <div class="progress-stat"><strong>${progress.glossaryViewed.length}</strong><span>terms explored</span></div>
         <div class="progress-stat"><strong>${progress.quizBest}/10</strong><span>best quiz</span></div>
+        <div class="progress-stat"><strong>${progress.wordsearchBest}/10</strong><span>wordsearch best</span></div>
         <div class="progress-stat"><strong>${progress.matchBest}</strong><span>matches found</span></div>
       </section>
 
@@ -673,6 +691,339 @@ function startMatch(entries) {
     `;
     document.getElementById("match-again").addEventListener("click", renderMatchSetup);
   }
+}
+
+function renderWordsearchSetup() {
+  app.innerHTML = `
+    <div class="page-shell wordsearch-panel">
+      <section class="game-intro">
+        <h1>Wordsearch</h1>
+        <p>Create a fresh puzzle from the glossary. A new random set is chosen each time. Click the first letter of a word, then click its last letter.</p>
+
+        <div class="wordsearch-setup-grid">
+          <div class="setup-option select-field">
+            <label for="wordsearch-category">Choose a topic</label>
+            <select id="wordsearch-category">${categoryOptions()}</select>
+            <span class="setup-note" id="wordsearch-available"></span>
+          </div>
+
+          <div class="setup-option">
+            <strong>Number of terms</strong>
+            <div class="segmented-control" id="wordsearch-count">
+              <button type="button" data-count="6" aria-pressed="false">6</button>
+              <button type="button" data-count="8" aria-pressed="false">8</button>
+              <button class="active" type="button" data-count="10" aria-pressed="true">10</button>
+            </div>
+          </div>
+        </div>
+
+        <fieldset class="wordsearch-modes">
+          <legend>Choose a mode</legend>
+          <button class="wordsearch-mode active" type="button" data-mode="simple" aria-pressed="true">
+            <strong>Simple</strong>
+            <span>Words go left to right or top to bottom.</span>
+          </button>
+          <button class="wordsearch-mode" type="button" data-mode="difficult" aria-pressed="false">
+            <strong>Difficult</strong>
+            <span>Adds diagonal and backwards words in all directions.</span>
+          </button>
+          <button class="wordsearch-mode" type="button" data-mode="advanced" aria-pressed="false">
+            <strong>Advanced</strong>
+            <span>Shows definitions instead of terms, with all directions included.</span>
+          </button>
+        </fieldset>
+
+        <div id="wordsearch-setup-message" aria-live="assertive"></div>
+        <button class="primary-button" id="start-wordsearch" type="button">Create wordsearch ${icons.arrow}</button>
+      </section>
+    </div>
+  `;
+
+  const categorySelect = document.getElementById("wordsearch-category");
+  const countControl = document.getElementById("wordsearch-count");
+  const modeControl = document.querySelector(".wordsearch-modes");
+  let wordCount = 10;
+  let mode = "simple";
+
+  function updateAvailableCount() {
+    const available = WORDSEARCH_ENGINE.eligibleEntries(GLOSSARY, categorySelect.value).length;
+    const used = Math.min(wordCount, available);
+    document.getElementById("wordsearch-available").textContent =
+      `${available} suitable terms available. This puzzle will use ${used}.`;
+  }
+
+  countControl.addEventListener("click", event => {
+    const button = event.target.closest("[data-count]");
+    if (!button) return;
+
+    wordCount = Number(button.dataset.count);
+    countControl.querySelectorAll("button").forEach(item => {
+      const active = item === button;
+      item.classList.toggle("active", active);
+      item.setAttribute("aria-pressed", String(active));
+    });
+    updateAvailableCount();
+  });
+
+  modeControl.addEventListener("click", event => {
+    const button = event.target.closest("[data-mode]");
+    if (!button) return;
+
+    mode = button.dataset.mode;
+    modeControl.querySelectorAll("[data-mode]").forEach(item => {
+      const active = item === button;
+      item.classList.toggle("active", active);
+      item.setAttribute("aria-pressed", String(active));
+    });
+  });
+
+  categorySelect.addEventListener("change", updateAvailableCount);
+  document.getElementById("start-wordsearch").addEventListener("click", () => {
+    createAndStartWordsearch({
+      category: categorySelect.value,
+      count: wordCount,
+      mode
+    });
+  });
+
+  updateAvailableCount();
+}
+
+function createAndStartWordsearch(options) {
+  const setupMessage = document.getElementById("wordsearch-setup-message");
+  const puzzle = WORDSEARCH_ENGINE.createPuzzle(GLOSSARY, options);
+
+  if (!puzzle) {
+    if (setupMessage) {
+      setupMessage.innerHTML = `
+        <div class="feedback" style="--feedback-color:var(--coral);--feedback-soft:var(--coral-soft)">
+          <strong>A puzzle could not be created this time.</strong>
+          Try a different topic or number of terms.
+        </div>
+      `;
+    }
+    return;
+  }
+
+  startWordsearch(puzzle, options);
+}
+
+function startWordsearch(puzzle, options) {
+  const modeNames = {
+    simple: "Simple",
+    difficult: "Difficult",
+    advanced: "Advanced"
+  };
+  const foundWords = new Set();
+  let selectedStart = null;
+  let locked = false;
+
+  function clueLabel(placement) {
+    const abbreviation = WORDSEARCH_ENGINE.normaliseWord(placement.entry.abbr);
+    if (abbreviation && placement.word === abbreviation) {
+      return `${placement.entry.abbr} - ${placement.entry.term}`;
+    }
+    return placement.entry.term;
+  }
+
+  app.innerHTML = `
+    <div class="page-shell wordsearch-panel">
+      <div class="game-status">
+        <strong><span id="wordsearch-found">0</span> of ${puzzle.placements.length} found</strong>
+        <div class="progress-track">
+          <div class="progress-fill" id="wordsearch-progress" style="width:0%"></div>
+        </div>
+        <strong>${modeNames[options.mode]} mode</strong>
+      </div>
+
+      <div class="wordsearch-layout">
+        <section class="wordsearch-board-card">
+          <div class="wordsearch-instruction" id="wordsearch-instruction">
+            Click the first letter of a word.
+          </div>
+          <div class="wordsearch-grid" id="wordsearch-grid"
+            style="--wordsearch-size:${puzzle.size}"
+            aria-label="${puzzle.size} by ${puzzle.size} wordsearch grid">
+            ${puzzle.grid.map((row, rowIndex) => row.map((letter, columnIndex) => `
+              <button class="wordsearch-cell" type="button"
+                data-row="${rowIndex}" data-column="${columnIndex}"
+                aria-label="Row ${rowIndex + 1}, column ${columnIndex + 1}, letter ${letter}">
+                ${letter}
+              </button>
+            `).join("")).join("")}
+          </div>
+          <div id="wordsearch-message" aria-live="assertive"></div>
+        </section>
+
+        <aside class="wordsearch-clues">
+          <div class="wordsearch-clues-heading">
+            <div>
+              <h2>${options.mode === "advanced" ? "Definition clues" : "Terms to find"}</h2>
+              <p>${options.mode === "advanced"
+                ? "Work out the term, then find it in the grid."
+                : "Spaces and punctuation are removed in the grid."}</p>
+            </div>
+            <button class="text-button" id="new-wordsearch" type="button">New puzzle</button>
+          </div>
+          <ol class="wordsearch-clue-list">
+            ${puzzle.placements.map(placement => `
+              <li data-clue-id="${escapeHtml(placement.id)}">
+                <span class="wordsearch-clue-marker" aria-hidden="true">${icons.check}</span>
+                <span>
+                  <span class="wordsearch-clue-text">${escapeHtml(
+                    options.mode === "advanced" ? placement.entry.def : clueLabel(placement)
+                  )}</span>
+                  ${options.mode === "advanced"
+                    ? `<span class="wordsearch-clue-answer">${escapeHtml(clueLabel(placement))}</span>`
+                    : ""}
+                </span>
+              </li>
+            `).join("")}
+          </ol>
+        </aside>
+      </div>
+    </div>
+  `;
+
+  const gridElement = document.getElementById("wordsearch-grid");
+  const instruction = document.getElementById("wordsearch-instruction");
+  const message = document.getElementById("wordsearch-message");
+
+  function cellAt(position) {
+    return gridElement.querySelector(
+      `[data-row="${position.row}"][data-column="${position.column}"]`
+    );
+  }
+
+  function clearStart() {
+    if (selectedStart) {
+      cellAt(selectedStart)?.classList.remove("start-selected");
+    }
+    selectedStart = null;
+  }
+
+  function samePath(first, second) {
+    return first.length === second.length && first.every((cell, index) =>
+      cell.row === second[index].row && cell.column === second[index].column
+    );
+  }
+
+  function flashIncorrect(path, explanation) {
+    const cells = (path || []).map(cellAt).filter(Boolean);
+    cells.forEach(cell => cell.classList.add("incorrect-selection"));
+    message.innerHTML = `
+      <div class="feedback" style="--feedback-color:var(--coral);--feedback-soft:var(--coral-soft)">
+        <strong>Not a listed word.</strong> ${escapeHtml(explanation)}
+      </div>
+    `;
+    locked = true;
+
+    window.setTimeout(() => {
+      cells.forEach(cell => cell.classList.remove("incorrect-selection"));
+      clearStart();
+      instruction.textContent = "Click the first letter of a word.";
+      message.innerHTML = "";
+      locked = false;
+    }, 900);
+  }
+
+  function markFound(placement) {
+    foundWords.add(placement.id);
+    placement.cells.forEach(position => cellAt(position)?.classList.add("found"));
+
+    const clue = document.querySelector(`[data-clue-id="${placement.id}"]`);
+    clue?.classList.add("found");
+
+    document.getElementById("wordsearch-found").textContent = foundWords.size;
+    document.getElementById("wordsearch-progress").style.width =
+      `${(foundWords.size / puzzle.placements.length) * 100}%`;
+    message.innerHTML = `
+      <div class="feedback" style="--feedback-color:var(--green);--feedback-soft:var(--green-soft)">
+        <strong>Found: ${escapeHtml(clueLabel(placement))}</strong>
+        ${escapeHtml(placement.entry.hint)}
+      </div>
+    `;
+    clearStart();
+
+    if (foundWords.size === puzzle.placements.length) {
+      locked = true;
+      instruction.textContent = "All terms found.";
+      window.setTimeout(finishWordsearch, 650);
+    } else {
+      instruction.textContent = "Good work. Click the first letter of the next word.";
+    }
+  }
+
+  function handleCellClick(event) {
+    const cell = event.target.closest(".wordsearch-cell");
+    if (!cell || locked) return;
+
+    const position = {
+      row: Number(cell.dataset.row),
+      column: Number(cell.dataset.column)
+    };
+
+    if (!selectedStart) {
+      selectedStart = position;
+      cell.classList.add("start-selected");
+      instruction.textContent = "Now click the last letter of the word.";
+      message.innerHTML = "";
+      return;
+    }
+
+    const path = WORDSEARCH_ENGINE.lineBetween(selectedStart, position);
+    if (!path) {
+      flashIncorrect([selectedStart, position], "Select a straight horizontal, vertical or diagonal line.");
+      return;
+    }
+
+    if (!WORDSEARCH_ENGINE.isDirectionAllowed(selectedStart, position, options.mode)) {
+      flashIncorrect(path, "Simple mode only uses left-to-right or top-to-bottom words.");
+      return;
+    }
+
+    const placement = puzzle.placements.find(candidate =>
+      !foundWords.has(candidate.id) && samePath(candidate.cells, path)
+    );
+
+    if (!placement) {
+      flashIncorrect(path, "Check the first and last letters, then try again.");
+      return;
+    }
+
+    markFound(placement);
+  }
+
+  function finishWordsearch() {
+    gridElement.removeEventListener("click", handleCellClick);
+    progress.wordsearchBest = Math.max(progress.wordsearchBest, puzzle.placements.length);
+    progress.wordsearchAttempts += 1;
+    saveProgress();
+
+    app.innerHTML = `
+      <div class="page-shell game-panel">
+        <section class="result-card">
+          <div class="result-ring">${puzzle.placements.length}</div>
+          <h2>Wordsearch complete</h2>
+          <p>You found every term in ${modeNames[options.mode]} mode.</p>
+          <div class="result-actions">
+            <button class="primary-button" id="wordsearch-again" type="button">New random puzzle</button>
+            <button class="secondary-button" id="wordsearch-settings" type="button">Change settings</button>
+          </div>
+        </section>
+      </div>
+    `;
+
+    document.getElementById("wordsearch-again").addEventListener("click", () => {
+      createAndStartWordsearch(options);
+    });
+    document.getElementById("wordsearch-settings").addEventListener("click", renderWordsearchSetup);
+  }
+
+  gridElement.addEventListener("click", handleCellClick);
+  document.getElementById("new-wordsearch").addEventListener("click", () => {
+    createAndStartWordsearch(options);
+  });
 }
 
 function renderSortSetup() {
