@@ -118,6 +118,55 @@ const GLOSSARY = [
     example: "Listening to music online.",
     tags: ["basics"]
   },
+  {
+    term: "Device",
+    abbr: null,
+    hint: "Equipment that can store, process or exchange information.",
+    def: "A piece of electronic equipment such as a computer, tablet or smartphone.",
+    example: "Using a laptop or phone to access the internet.",
+    tags: ["basics", "access"]
+  },
+  {
+    term: "Network",
+    abbr: null,
+    hint: "Connected devices that can communicate and share resources.",
+    def: "Two or more connected devices that can communicate or share information and services.",
+    example: "Computers connected together in a training centre.",
+    tags: ["basics", "access"]
+  },
+  {
+    term: "Blog",
+    abbr: null,
+    hint: "A website or page containing regularly published posts.",
+    def: "An online journal or information website where posts are published, usually with the newest post first.",
+    example: "Reading a learner's weekly course blog.",
+    tags: ["basics"]
+  },
+  {
+    term: "Social Networking",
+    abbr: null,
+    hint: "Using an online service to connect and share with other people.",
+    def: "Using websites or apps to communicate, connect with people and share content online.",
+    example: "Sharing updates or joining an interest group online.",
+    tags: ["basics", "safety"],
+    searchable: false
+  },
+  {
+    term: "E-commerce",
+    abbr: "Electronic Commerce",
+    hint: "Buying and selling products or services online.",
+    def: "Commercial activity carried out over the internet, including buying and selling goods or services.",
+    example: "Ordering an item from an online shop.",
+    tags: ["basics", "safety"]
+  },
+  {
+    term: "E-learning",
+    abbr: "Electronic Learning",
+    hint: "Learning delivered or supported using online technology.",
+    def: "Education or training completed using computers, websites, apps or other digital services.",
+    example: "Completing an online course or watching a lesson video.",
+    tags: ["basics"]
+  },
 
   // GETTING ONLINE
   {
@@ -129,11 +178,35 @@ const GLOSSARY = [
     tags: ["access"]
   },
   {
+    term: "Modem",
+    abbr: null,
+    hint: "Connects a network to the service supplied by an internet provider.",
+    def: "A device that converts connection signals so a home or organisation can communicate with an internet service provider.",
+    example: "A broadband modem connects the local network to the provider's service.",
+    tags: ["access"]
+  },
+  {
+    term: "Broadband",
+    abbr: null,
+    hint: "A high-speed internet connection.",
+    def: "A high-speed internet service that can carry large amounts of data.",
+    example: "Using broadband for streaming, browsing and video calls.",
+    tags: ["access"]
+  },
+  {
     term: "Router",
     abbr: null,
     hint: "The box that shares an internet connection.",
     def: "A device that directs network traffic and shares an internet connection with other devices.",
     example: "A laptop connects to the home router using Wi-Fi.",
+    tags: ["access"]
+  },
+  {
+    term: "Ethernet",
+    abbr: null,
+    hint: "A wired network connection.",
+    def: "A technology used to connect devices to a network using a cable.",
+    example: "Connecting a computer directly to a router with an Ethernet cable.",
     tags: ["access"]
   },
   {
@@ -226,6 +299,22 @@ const GLOSSARY = [
     example: "Refreshing a page to check for updated information.",
     tags: ["browser"]
   },
+  {
+    term: "Domain Name",
+    abbr: "Domain",
+    hint: "The readable name used to identify a website.",
+    def: "The unique, human-readable name used to locate a website without entering its numerical network address.",
+    example: "gov.ie is a domain name.",
+    tags: ["browser", "basics"]
+  },
+  {
+    term: "Print Preview",
+    abbr: null,
+    hint: "Shows how a page should look before it is printed.",
+    def: "A browser or application view that displays the expected printed layout before printing.",
+    example: "Checking the page range and layout in Print Preview before printing.",
+    tags: ["browser"]
+  },
 
   // SEARCH AND SOURCES
   {
@@ -285,6 +374,14 @@ const GLOSSARY = [
     def: "A digital message sent from one email address to another using the internet.",
     example: "Sending a tutor a question about class times.",
     tags: ["email"]
+  },
+  {
+    term: "Webmail",
+    abbr: null,
+    hint: "Email opened through a website in a browser.",
+    def: "An email service that is accessed through a web browser rather than a separately installed email application.",
+    example: "Opening an email account by signing in on its website.",
+    tags: ["email", "browser"]
   },
   {
     term: "Recipient",
